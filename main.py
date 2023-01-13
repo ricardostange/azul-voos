@@ -2,8 +2,10 @@ from selenium import webdriver
 import time
 from bs4 import BeautifulSoup
 import re
+import random
 
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.chrome.options import Options
 
 FILE_NAME = 'azul.html'
 
@@ -36,29 +38,48 @@ def get_flight_card_list(html):
     return flight_card_list
 
 
-def get_list_price_html_from_card(card_html):
-    soup = BeautifulSoup(card_html, 'html.parser')
-    price_html = soup.find_all('h4', class_=re.compile('^current\s'))
-    price_html = [e.text for e in price_html]
-    return price_html
 
-def get_price_from_price_html(price_html):
+def read_price_from_html(price_html):
     # get only the digits from the string
     price_digits = re.findall(r'\d+', price_html)
     price = int(''.join(price_digits))/100
     return price
 
+def get_prices_from_card(card_html):
+    soup = BeautifulSoup(str(card_html), 'html.parser')
+    price_html_list = soup.find_all('h4', class_=re.compile('^current\s'))
+    price_html_list = [e.text for e in price_html_list]
+    flight_prices = [read_price_from_html(str(price_html)) for price_html in price_html_list]
+    assert len(flight_prices) == 3
+    # flight_prices[0] e flight_prices[1] são ambos a tarifa normal
+    # Portanto flight_prices[1] não é usada
+    return flight_prices[0], flight_prices[2]
+
+def is_page_loaded(driver):
+    html = driver.page_source
+    return html.find("Ver tarifas") != -1 or html.find("Parece que não temos voos") != -1
+
 def is_page_loaded_and_has_flights(driver):
     html = driver.page_source
-    #print(f'Localização "Ver tarifas": {html.find("Ver tarifas")}')
     return html.find("Ver tarifas") != -1
 
 def get_html(query, driver):
     url = url_template.replace('ORIGEM', query.origem).replace('DESTINO', query.destino).replace('MM/DD/YYYY', query.data_ida)
     print(url)
     driver.get(url)
-    wait = WebDriverWait(driver, timeout = 20, poll_frequency = 0.5)
-    wait.until(is_page_loaded_and_has_flights)
+    wait = WebDriverWait(driver, timeout = 60, poll_frequency = 0.5)
+    try:
+        wait.until(is_page_loaded)
+    except:
+        print('Timeout, trying again')
+        try:
+            driver.refresh()
+            wait.until(is_page_loaded)
+        except:
+            print('Timeout again, returning None')
+            return None
+    if not is_page_loaded_and_has_flights(driver):
+        return None
     html = driver.page_source
     check_for_errors(html)
     #print(f'Localização "Ver tarifas": {html.find("Ver tarifas")}') # -1 a página não foi carregada ou página diferente do esperado
@@ -67,13 +88,6 @@ def get_html(query, driver):
 def check_for_errors(html):
     pass
 
-def get_prices_from_card(card_html):
-    price_html_list = get_list_price_html_from_card(str(card_html))
-    flight_prices = [get_price_from_price_html(str(price_html)) for price_html in price_html_list]
-    assert len(flight_prices) == 3
-    # flight_prices[0] e flight_prices[1] são ambos a tarifa normal
-    # Portanto flight_prices[1] não é usada
-    return flight_prices[0], flight_prices[2]
 
 
 def get_departure_time_from_card(card_html):
@@ -111,33 +125,20 @@ def get_flight_duration(departure_time, arrival_time):
 
 
 
-
-def main():
-    # query_list = [Query('GRU', 'CNF', '02/01/2023')]
-
-    aeroportos = ['BEL', 'BSB', 'CGB', 'CGH', 'CNF']
-    datas = [f'02/{str(i).zfill(2)}/2023' for i in range(1, 20)]
-
-    query_list = [Query('GRU', aeroporto, data) for aeroporto in aeroportos for data in datas]
-
-    # query_list = [Query('GRU', 'CNF', '02/01/2023')]
-
-
-    DEBUG = False
-    SAVE_HTML = False
-    SLEEP_TIME = 10
-
-    if DEBUG:
-        html = load_html()
-        return
-
-
-    driver = webdriver.Firefox()
+def get_flight_data(query_list, driver, sleep_time=10):
+    '''
+    Given a list of queries in the format (origem, destino, MM/DD/YYYY),
+    returns a list of dictionaries with the flight data.
+    sleep_time is the minimum time to wait between requests.
+    '''
     for query in query_list:
+        time_start = time.time()
         html = get_html(query, driver)
-        if SAVE_HTML:
-            html_pretty = html_prettify(html)
-            save_html(html_pretty)
+        if html is None:
+            continue
+        # if SAVE_HTML:
+        #     html_pretty = html_prettify(html)
+        #     save_html(html_pretty)
 
         list_of_cards = []
         flight_card_list = get_flight_card_list(html)
@@ -151,11 +152,37 @@ def main():
             flight_dict['Duração'] = get_flight_duration(flight_dict['Partida'], flight_dict['Chegada'])
             list_of_cards.append(flight_dict)
         print(list_of_cards)
-        time.sleep(SLEEP_TIME)
+        time_end = time.time()
+        print(f'Tempo de execução: {time_end - time_start}')
+        time.sleep(sleep_time)
 
-    if not DEBUG:
-        driver.quit()
-        time.sleep(10)
+    driver.quit()
+    time.sleep(10)
+
+
+
+
+def main():
+    aeroportos = ['BEL', 'BSB', 'CGB', 'CGH', 'CNF']
+    datas = [f'02/{str(i).zfill(2)}/2023' for i in range(1, 20)]
+
+    query_list = [Query('GRU', aeroporto, data) for aeroporto in aeroportos for data in datas]
+    random.shuffle(query_list)
+
+    SLEEP_TIME = 0
+
+    chromeOptions = Options()
+    chromeOptions.page_load_strategy = 'eager' # makes driver.get() return faster
+
+
+    driver = webdriver.Chrome(chrome_options=chromeOptions)
+    # get screen size
+    driver.set_window_size(1280, 720) # If window size is too small, the wrong page will load
+    driver.minimize_window()
+
+    flight_data = get_flight_data(query_list, driver, sleep_time=SLEEP_TIME)
+    print(flight_data)
+    driver.quit()
+
 if __name__ == '__main__':
     main()
-
