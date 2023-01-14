@@ -44,7 +44,6 @@ def get_flight_card_list(html):
     return flight_card_list
 
 
-
 def read_price_from_html(price_html):
     # get only the digits from the string
     price_digits = re.findall(r'\d+', price_html)
@@ -98,7 +97,6 @@ def check_for_errors(html):
     pass
 
 
-
 def get_departure_time_from_card(card_html):
     soup = BeautifulSoup(str(card_html), 'html.parser')
     departure_time_html = soup.find_all('h4', class_=re.compile('^departure\s'))
@@ -119,17 +117,6 @@ def get_cod_voos(card_html):
 
 def get_num_conexoes(card_html):
     return len(get_cod_voos(card_html)) - 1
-
-# def get_flight_duration(departure_time, arrival_time):
-#     '''Retorna a duração do voo em minutos'''
-#     '''departure_time e arrival_time são strings no formato 'HH:MM' '''
-#     departure_time = time.strptime(departure_time, '%H:%M')
-#     arrival_time = time.strptime(arrival_time, '%H:%M')
-#     if arrival_time.tm_hour > departure_time.tm_hour:
-#         flight_duration = (arrival_time.tm_hour - departure_time.tm_hour) * 60 + (arrival_time.tm_min - departure_time.tm_min)
-#     else:
-#         flight_duration = (24 - departure_time.tm_hour + arrival_time.tm_hour) * 60 + (arrival_time.tm_min - departure_time.tm_min)
-#     return flight_duration
 
 def get_flight_data_from_card(card_html):
     flight_dict = dict()
@@ -247,7 +234,7 @@ def main():
     # Query list example:
     # query_list = [Query('GRU', 'CNF', '02/01/2023'), Query('GRU', 'BSB', '02/02/2023'), ...]
 
-    myScrapper = FlightScrapper(verbose=True)
+    myScrapper = FlightScrapper(verbose=False)
 
     print(myScrapper.get_flights_from_query_list(query_list))
 
