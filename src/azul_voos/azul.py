@@ -3,6 +3,7 @@ import time
 from bs4 import BeautifulSoup
 import re
 import random
+import os
 
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.chrome.options import Options
@@ -135,7 +136,35 @@ def get_flight_data_from_card_list(flight_list_html):
     return data_flights
 
 
-def get_flight_data(query_list, driver, sleep_time=10, verbose=False):
+
+def get_data_from_single_query(query, driver, verbose=False):
+    url = query_to_url(query)
+
+    if verbose:
+        time_start = time.time()
+        print(f'Query: {query.origem} -> {query.destino} ({query.data_ida})')
+        print(f'URL: {url}')
+    
+    html = get_html(url, driver)
+    if html is None:
+        return((query, []))
+
+    flight_card_list = get_flight_card_list(html)
+    flights_from_query = get_flight_data_from_card_list(flight_card_list)
+
+    if verbose:
+        print(f'Found {len(flights_from_query)} flights')
+        print('List of flights:')
+        for flight in flights_from_query:
+            print(flight)
+        time_end = time.time()
+        print(f'Tempo de execução: {(time_end - time_start):.2f} segundos')
+        print()
+    
+    return (query, flights_from_query)
+
+
+def get_flight_data(query_list, driver, verbose=False):
     '''
     Given a list of queries in the format (origem, destino, MM/DD/YYYY),
     returns a list of tuples with queries and flight data.
@@ -143,36 +172,7 @@ def get_flight_data(query_list, driver, sleep_time=10, verbose=False):
     '''
     scrapped_data = []
     for query in query_list:
-        time_start = time.time()
-        if verbose:
-            print(f'Query: {query.origem} -> {query.destino} ({query.data_ida})')
-        url = query_to_url(query)
-        if verbose:
-            print(f'URL: {url}')
-        html = get_html(url, driver)
-        if html is None:
-            scrapped_data.append((query, []))
-            continue
-        # if SAVE_HTML:
-        #     html_pretty = html_prettify(html)
-        #     save_html(html_pretty)
-
-        flight_card_list = get_flight_card_list(html)
-        flights_from_query = get_flight_data_from_card_list(flight_card_list)
-        if verbose:
-            print(f'Found {len(flights_from_query)} flights')
-            print('List of flights:')
-            for flight in flights_from_query:
-                print(flight)
-        time_end = time.time()
-        if verbose:
-            print(f'Tempo de execução: {(time_end - time_start):.2f} segundos')
-            print()
-        time.sleep(sleep_time)
-        scrapped_data.append((query, flights_from_query))
-
-    # driver.quit()
-    # time.sleep(10)
+        scrapped_data.append(get_data_from_single_query(query, driver, verbose))
     return scrapped_data
 
 def parse_flight_duration(duration_str):
@@ -197,6 +197,7 @@ def get_flight_duration_from_card(card_html):
     duration_str = str(duration_strong_html).replace('<strong>', '').replace('</strong>', '')
     return parse_flight_duration(duration_str)
 
+
 class FlightScrapper:
     def __init__(self, options=None, verbose=False):
         self.verbose = verbose
@@ -204,13 +205,12 @@ class FlightScrapper:
         
         if self.options is None:
             self.options = Options()
-            self.options.page_load_strategy = 'eager' # makes driver.get() return faster
-        try:
-            self.driver = webdriver.Chrome(options=self.options)
-        except:
+            self.options.page_load_strategy = 'eager' # makes driver.get() faster
+        if not os.path.exists("chromedriver.exe"):
             print('Chrome driver not found. Downloading...')
             download_chrome_driver()
-            self.driver = webdriver.Chrome(options=self.options)
+        self.driver = webdriver.Chrome(options=self.options)
+
         self.driver.set_window_size(1280, 720) # If window size is too small, the wrong page will load
         self.driver.minimize_window()
 

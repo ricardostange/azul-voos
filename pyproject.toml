@@ -1,10 +1,10 @@
 [build-system]
-requires = ["hatchling", "selenium", "bs4"]
+requires = ["hatchling", "selenium", "bs4", "requests", "wget"]
 build-backend = "hatchling.build"
 
 [project]
 name = "azul_voos"
-version = "0.0.3"
+version = "0.0.4"
 authors = [
   { name="ricks", email="ricstange@gmail.com" },
 ]
