@@ -205,8 +205,12 @@ class FlightScrapper:
         if self.options is None:
             self.options = Options()
             self.options.page_load_strategy = 'eager' # makes driver.get() return faster
-
-        self.driver = webdriver.Chrome(options=self.options)
+        try:
+            self.driver = webdriver.Chrome(options=self.options)
+        except:
+            print('Chrome driver not found. Downloading...')
+            download_chrome_driver()
+            self.driver = webdriver.Chrome(options=self.options)
         self.driver.set_window_size(1280, 720) # If window size is too small, the wrong page will load
         self.driver.minimize_window()
 
