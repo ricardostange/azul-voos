@@ -210,7 +210,7 @@ class FlightScrapper:
         self.driver.set_window_size(1280, 720) # If window size is too small, the wrong page will load
         self.driver.minimize_window()
 
-    def get_flights_from_query_list(self, query_list):
+    def scrape(self, query_list):
         '''
         Given a list of queries in the format (origem, destino, MM/DD/YYYY),
         returns a list of tuples with queries and flight data.
@@ -219,6 +219,30 @@ class FlightScrapper:
 
     def close(self):
         self.driver.quit()
+
+
+def download_chrome_driver():
+    import requests
+    import wget
+    import zipfile
+    import os
+
+    # get the latest chrome driver version number
+    url = 'https://chromedriver.storage.googleapis.com/LATEST_RELEASE'
+    response = requests.get(url)
+    version_number = response.text
+
+    # build the donwload url
+    download_url = "https://chromedriver.storage.googleapis.com/" + version_number +"/chromedriver_win32.zip"
+
+    # download the zip file using the url built above
+    latest_driver_zip = wget.download(download_url,'chromedriver.zip')
+
+    # extract the zip file
+    with zipfile.ZipFile(latest_driver_zip, 'r') as zip_ref:
+        zip_ref.extractall() # you can specify the destination folder path here
+    # delete the zip file downloaded above
+    os.remove(latest_driver_zip)
 
 def gen_random_query_list(sample_size):
     aeroportos = ['BEL', 'BSB', 'CGB', 'CGH', 'CNF']
@@ -237,7 +261,7 @@ def main():
 
     myScrapper = FlightScrapper(verbose=False)
 
-    print(myScrapper.get_flights_from_query_list(query_list))
+    print(myScrapper.scrape(query_list))
 
 if __name__ == '__main__':
     main()
