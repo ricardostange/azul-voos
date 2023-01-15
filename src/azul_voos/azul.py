@@ -3,7 +3,7 @@ import time
 from bs4 import BeautifulSoup
 import re
 import random
-import os
+import dates
 
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.chrome.options import Options
@@ -17,7 +17,9 @@ class Query:
     def __init__(self, origem, destino, data_ida):
         self.origem = origem
         self.destino = destino
-        self.data_ida = data_ida
+        dates.verify_ddmmyyyy(data_ida)
+        dates.verify_date_is_in_future(data_ida)
+        self.data_ida = dates.convert_ddmmyyyy_to_mmddyyyy(data_ida)
 
     def __str__(self):
         return f'Origem: {self.origem}, Destino: {self.destino}, Data de ida: {self.data_ida}'
@@ -161,7 +163,7 @@ def get_data_from_single_query(query, driver, verbose=False):
         print(f'Tempo de execução: {(time_end - time_start):.2f} segundos')
         print()
     
-    return (query, flights_from_query)
+    return flights_from_query
 
 
 def get_flight_data(query_list, driver, verbose=False):
@@ -198,6 +200,7 @@ def get_flight_duration_from_card(card_html):
     return parse_flight_duration(duration_str)
 
 
+
 class FlightScrapper:
     def __init__(self, options=None, verbose=False):
         self.verbose = verbose
@@ -206,11 +209,12 @@ class FlightScrapper:
         if self.options is None:
             self.options = Options()
             self.options.page_load_strategy = 'eager' # makes driver.get() faster
-        if not os.path.exists("chromedriver.exe"):
+        try:
+            self.driver = webdriver.Chrome(options=self.options)
+        except:
             print('Chrome driver not found. Downloading...')
             download_chrome_driver()
-        self.driver = webdriver.Chrome(options=self.options)
-
+            self.driver = webdriver.Chrome(options=self.options)
         self.driver.set_window_size(1280, 720) # If window size is too small, the wrong page will load
         self.driver.minimize_window()
 
@@ -250,7 +254,7 @@ def download_chrome_driver():
 
 def gen_random_query_list(sample_size):
     aeroportos = ['BEL', 'BSB', 'CGB', 'CGH', 'CNF']
-    datas = [f'02/{str(i).zfill(2)}/2023' for i in range(1, 20)]
+    datas = [f'{str(i).zfill(2)}/04/2023' for i in range(1, 20)]
     query_list = [Query('GRU', aeroporto, data) for aeroporto in aeroportos for data in datas]
     random.shuffle(query_list)
     return query_list[:sample_size]
@@ -261,7 +265,7 @@ def main():
     query_list = gen_random_query_list(QUERY_SAMPLE_SIZE)
 
     # Query list example:
-    # query_list = [Query('GRU', 'CNF', '02/01/2023'), Query('GRU', 'BSB', '02/02/2023'), ...]
+    query_list = [Query('GRU', 'CNF', '10/02/2023'), Query('GRU', 'BSB', '01/02/2023')]
 
     myScrapper = FlightScrapper(verbose=False)
 

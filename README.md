@@ -8,13 +8,11 @@ Scrapping de dados de voos da empresa Azul.
 ## Driver utilizado
 - Chrome Driver
 
-## Como Utilizar
-- Instalar os módulos necessários
-- Baixar a versão adequada do Chrome Driver
-
 Exemplo de uso:
 ```python
-pass
+query_list = [Query('GRU', 'CNF', '10/02/2023'), Query('GRU', 'BSB', '01/02/2023')]
+myScrapper = FlightScrapper(verbose=False)
+results = myScrapper.scrape(query_list)
 ```
 
 
