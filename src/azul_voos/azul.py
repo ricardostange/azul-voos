@@ -55,6 +55,7 @@ def get_prices_from_card(card_html):
     price_html_list = soup.find_all('h4', class_=re.compile('^current\s'))
     price_html_list = [e.text for e in price_html_list]
     flight_prices = [read_price_from_html(str(price_html)) for price_html in price_html_list]
+    # The next error can be thrown if the page window is too small
     assert len(flight_prices) >= 3
     # flight_prices[0] e flight_prices[1] são ambos a tarifa normal
     # Portanto flight_prices[1] não é usada
@@ -170,8 +171,8 @@ def get_flight_data(query_list, driver, sleep_time=10, verbose=False):
         time.sleep(sleep_time)
         scrapped_data.append((query, flights_from_query))
 
-    driver.quit()
-    time.sleep(10)
+    # driver.quit()
+    # time.sleep(10)
     return scrapped_data
 
 def parse_flight_duration(duration_str):
