@@ -1,8 +1,7 @@
 import re
 import time
-import util
 import random
-import dates, html_scraper
+from azul_voos import util, dates, html_scraper
 from selenium import webdriver
 
 
@@ -127,7 +126,6 @@ class FlightScraper:
 def main():
     # Query list example:
     query_list = [Query('GRU', 'CNF', '10/02/2023'), Query('GRU', 'BSB', '01/02/2023')]
-
     myScraper = FlightScraper(verbose=False)
 
     print(myScraper.scrape(query_list))

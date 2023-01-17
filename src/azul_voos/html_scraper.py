@@ -1,21 +1,24 @@
 from bs4 import BeautifulSoup
 import re
-import util
+from azul_voos import util
 
-def is_page_loaded(driver):
+def is_page_loaded_and_has_no_flights(driver):
     html = driver.page_source
-    return html.find("Ver tarifas") != -1 or html.find("Parece que não temos voos") != -1
+    return html.find("Parece que não temos voos") != -1
 
 def is_page_loaded_and_has_flights(driver):
+    '''"Ver tarifas" só aparece quando voos são mostrados'''
     html = driver.page_source
     return html.find("Ver tarifas") != -1
+
+def is_page_loaded(driver):
+    return is_page_loaded_and_has_flights(driver) or is_page_loaded_and_has_no_flights(driver)
 
 def get_flight_card_list(html):
      # get all divs in which the class name starts with "flight-card", uses regex
     soup = BeautifulSoup(html, 'html.parser')
     flight_card_list = soup.find_all('div', class_=re.compile('^flight-card\s'))
     return flight_card_list
-
 
 def read_price_from_html(price_html):
     # get only the digits from the string
@@ -34,6 +37,17 @@ def get_prices_from_card(card_html):
     # Portanto flight_prices[1] não é usada
     return flight_prices[0], flight_prices[2]
 
+def get_departure_time_from_card(card_html):
+    soup = BeautifulSoup(str(card_html), 'html.parser')
+    departure_time_html = soup.find_all('h4', class_=re.compile('^departure\s'))
+    departure_time = re.findall(r'\d+:\d+', str(departure_time_html))
+    return departure_time[0]
+
+def get_arrival_time_from_card(card_html):
+    soup = BeautifulSoup(str(card_html), 'html.parser')
+    arrival_time_html = soup.find_all('h4', class_=re.compile('^arrival\s'))
+    arrival_time = re.findall(r'\d+:\d+', str(arrival_time_html))
+    return arrival_time[0]
 
 def get_flight_duration_from_card(card_html):
     ''' Given a card html, returns the flight duration in minutes '''
@@ -42,19 +56,6 @@ def get_flight_duration_from_card(card_html):
     duration_strong_html = duration_html[0].find_all('strong')[0]
     duration_str = str(duration_strong_html).replace('<strong>', '').replace('</strong>', '')
     return util.parse_flight_duration(duration_str)
-
-def get_departure_time_from_card(card_html):
-    soup = BeautifulSoup(str(card_html), 'html.parser')
-    departure_time_html = soup.find_all('h4', class_=re.compile('^departure\s'))
-    departure_time = re.findall(r'\d+:\d+', str(departure_time_html))
-    return departure_time[0]
-
-
-def get_arrival_time_from_card(card_html):
-    soup = BeautifulSoup(str(card_html), 'html.parser')
-    arrival_time_html = soup.find_all('h4', class_=re.compile('^arrival\s'))
-    arrival_time = re.findall(r'\d+:\d+', str(arrival_time_html))
-    return arrival_time[0]
 
 def get_cod_voos(card_html):
     soup = BeautifulSoup(str(card_html), 'html.parser')

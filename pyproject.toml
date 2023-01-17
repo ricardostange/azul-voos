@@ -4,11 +4,11 @@ build-backend = "hatchling.build"
 
 [project]
 name = "azul_voos"
-version = "0.0.7"
+version = "0.1.2"
 authors = [
   { name="ricks", email="ricstange@gmail.com" },
 ]
-description = "Scrapping de dados de voo da empresa Azul utilizando selenium"
+description = "Scraping de dados de voo da empresa Azul utilizando selenium"
 readme = "README.md"
 requires-python = ">=3.7"
 classifiers = [
