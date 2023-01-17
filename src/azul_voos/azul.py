@@ -1,6 +1,5 @@
 import time
-# TODO import from azul_voos
-import util, dates, html_scraper
+from azul_voos import util, dates, html_scraper
 from selenium import webdriver
 
 
