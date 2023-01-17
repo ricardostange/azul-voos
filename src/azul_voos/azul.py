@@ -1,7 +1,6 @@
-import re
 import time
-import random
-from azul_voos import util, dates, html_scraper
+# TODO import from azul_voos
+import util, dates, html_scraper
 from selenium import webdriver
 
 
@@ -15,10 +14,11 @@ class Query:
         self.destino = destino
         dates.verify_ddmmyyyy(data_ida)
         dates.verify_date_is_in_future(data_ida)
+        self.data_dmy = data_ida # Data no formato DD/MM/YYYY armazenada
         self.data_ida = dates.convert_ddmmyyyy_to_mmddyyyy(data_ida)
 
     def __str__(self):
-        return f'Origem: {self.origem}, Destino: {self.destino}, Data de ida: {self.data_ida}'
+        return f'Origem: {self.origem}, Destino: {self.destino}, Data de ida: {self.data_dmy}'
 
     def __repr__(self):
         return str(self)
@@ -46,7 +46,11 @@ def read_html(url, driver):
 
 
 def get_flight_data_from_card(card_html):
+    ''' Given a card html, returns a dictionary with flight data.
+        Returns None if the flight is sold out.'''
     flight_dict = dict()
+    if html_scraper.is_flight_sold_out(card_html):
+        return None
     flight_dict['Normal'], flight_dict['Mais Azul'] = html_scraper.get_prices_from_card(card_html)
     flight_dict['Partida'] = html_scraper.get_departure_time_from_card(card_html)
     flight_dict['Chegada'] = html_scraper.get_arrival_time_from_card(card_html)
@@ -70,7 +74,8 @@ def get_data_from_single_query(query, driver, verbose=False):
     flight_card_list = html_scraper.get_flight_card_list(html)
     flights_from_query = []
     for card in flight_card_list:
-        flights_from_query.append(get_flight_data_from_card(card))
+        if card is not None:
+            flights_from_query.append(get_flight_data_from_card(card))
 
     if verbose:
         print(f'Found {len(flights_from_query)} flights')
@@ -125,10 +130,12 @@ class FlightScraper:
 
 def main():
     # Query list example:
-    query_list = [Query('GRU', 'CNF', '10/02/2023'), Query('GRU', 'BSB', '01/02/2023')]
-    myScraper = FlightScraper(verbose=False)
-
-    print(myScraper.scrape(query_list))
+    origem = 'VCP'
+    destino = 'FLL'
+    dates = ['02/02/2023', '03/02/2023', '04/02/2023']
+    queries = [Query(origem, destino, date) for date in dates]
+    myScraper = FlightScraper(verbose=True)
+    result = myScraper.scrape(queries)
 
 if __name__ == '__main__':
     main()

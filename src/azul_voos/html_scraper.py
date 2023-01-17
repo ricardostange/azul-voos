@@ -20,6 +20,12 @@ def get_flight_card_list(html):
     flight_card_list = soup.find_all('div', class_=re.compile('^flight-card\s'))
     return flight_card_list
 
+def is_flight_sold_out(card_html):
+    soup = BeautifulSoup(str(card_html), 'html.parser')
+    sold_out_html = str(card_html).find("Voo esgotado")
+    if sold_out_html != -1:
+        return True
+
 def read_price_from_html(price_html):
     # get only the digits from the string
     price_digits = re.findall(r'\d+', price_html)
@@ -32,7 +38,9 @@ def get_prices_from_card(card_html):
     price_html_list = [e.text for e in price_html_list]
     flight_prices = [read_price_from_html(str(price_html)) for price_html in price_html_list]
     # The next error can be thrown if the page window is too small
-    assert len(flight_prices) >= 3
+    if(len(flight_prices) < 3):
+        print(flight_prices)
+    assert len(flight_prices) >= 3 #test
     # flight_prices[0] e flight_prices[1] são ambos a tarifa normal
     # Portanto flight_prices[1] não é usada
     return flight_prices[0], flight_prices[2]
