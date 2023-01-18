@@ -55,6 +55,7 @@ def get_flight_data_from_card(card_html):
     flight_dict['Chegada'] = html_scraper.get_arrival_time_from_card(card_html)
     flight_dict['Conexões'] = html_scraper.get_num_conexoes(card_html)
     flight_dict['Duração'] = html_scraper.get_flight_duration_from_card(card_html)
+    flight_dict['Codigos'] = html_scraper.get_cod_voos(card_html)
     return flight_dict
 
 
